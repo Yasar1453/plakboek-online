@@ -306,6 +306,52 @@ body::before {
   opacity: 0.7;
 }
 
+/* Meerdere foto's op een pagina liggen als een stapeltje op elkaar */
+.polaroid-stapel {
+  position: relative;
+  margin-top: 4%;
+  width: 84%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.polaroid-stapel .polaroid {
+  margin-top: 0;
+  width: 100%;
+}
+.polaroid-stapel.meerdere {
+  cursor: pointer;
+}
+.polaroid-stapel.meerdere .polaroid {
+  position: absolute;
+  inset: 0;
+  transform: rotate(calc(var(--laag) * 2.4deg - 1.4deg))
+    translate(calc(var(--laag) * 5px), calc(var(--laag) * -4px));
+  z-index: calc(20 - var(--laag));
+  transition: transform 0.25s ease;
+}
+/* Alleen de bovenste kaart vangt klikken, anders zit een onderliggende
+   video in de weg */
+.polaroid-stapel.meerdere .polaroid:not(:first-child) {
+  pointer-events: none;
+}
+
+.stapel-teller {
+  align-self: center;
+  margin-top: 3%;
+  padding: 2px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(125, 106, 86, 0.12);
+  color: var(--inkt-licht);
+  font-family: 'Caveat', cursive;
+  font-size: clamp(12px, 1.9vmin, 16px);
+  cursor: pointer;
+}
+.stapel-teller:hover {
+  background: rgba(125, 106, 86, 0.2);
+}
+
 .polaroid {
   position: relative;
   margin-top: 4%;
@@ -612,20 +658,67 @@ body::before {
 }
 .preview-plaatshouder small { font-size: 10px; line-height: 1.2; }
 
-.foto-preview {
+/* Rij met voorbeelden: zowel de bestanden die nu op de pagina staan als de
+   nieuw gekozen bestanden */
+.foto-preview,
+.huidige-media {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 10px;
+}
+.huidige-media {
+  margin-bottom: 4px;
+}
+
+.media-vakje {
+  position: relative;
   background: var(--wit);
   padding: 8px 8px 20px;
-  width: 150px;
+  width: 116px;
   box-shadow: 0 4px 10px rgba(70, 45, 20, 0.25);
   transform: rotate(-2deg);
 }
-.foto-preview img,
-.foto-preview video {
+.media-vakje:nth-child(even) {
+  transform: rotate(1.8deg);
+}
+.media-vakje img,
+.media-vakje video {
   width: 100%;
-  height: 120px;
+  height: 92px;
   object-fit: cover;
   display: block;
+}
+.media-vakje .preview-plaatshouder {
+  height: 92px;
+}
+.media-vakje.gaat-weg {
+  opacity: 0.4;
+}
+.media-vakje.gaat-weg::after {
+  content: 'gaat eraf';
+  position: absolute;
+  inset: auto 0 4px 0;
+  text-align: center;
+  font-family: 'Caveat', cursive;
+  font-size: 14px;
+  color: #93313c;
+}
+
+.media-weg {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: #93313c;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(70, 45, 20, 0.35);
 }
 
 .formulier-fout {

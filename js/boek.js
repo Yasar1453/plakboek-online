@@ -153,6 +153,76 @@
     return paginas;
   }
 
+  // Een pagina kan meerdere foto's en video's hebben; die liggen als een
+  // stapeltje polaroids op elkaar en je klikt ze een voor een naar voren
+  function bestandenVan(entry) {
+    if (entry.media && entry.media.length) return entry.media.map((m) => m.bestand);
+    return entry.foto ? [entry.foto] : [];
+  }
+
+  function maakMediaEl(bestand, titel) {
+    if (isVideo(bestand)) {
+      const video = document.createElement('video');
+      video.src = `${UPLOADS}${bestand}`;
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+      // Bedienen van de video mag geen pagina-sleep starten
+      ['pointerdown', 'mousedown', 'touchstart'].forEach((t) =>
+        video.addEventListener(t, (e) => e.stopPropagation())
+      );
+      return video;
+    }
+    const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.src = `${UPLOADS}${bestand}`;
+    img.alt = titel;
+    return img;
+  }
+
+  function vulStapel(stapelEl, tellerEl, entry, volgnummer) {
+    const bestanden = bestandenVan(entry);
+    bestanden.forEach((bestand, i) => {
+      const polaroid = document.createElement('div');
+      polaroid.className = 'polaroid ' + ((volgnummer + i) % 2 ? 'draai-b' : 'draai-a');
+      polaroid.appendChild(maakMediaEl(bestand, entry.titel));
+      stapelEl.appendChild(polaroid);
+    });
+    if (bestanden.length < 2) return;
+
+    stapelEl.classList.add('meerdere');
+    tellerEl.classList.remove('verborgen');
+
+    function werkStapelBij() {
+      const kaarten = [...stapelEl.children];
+      kaarten.forEach((kaart, i) => kaart.style.setProperty('--laag', i));
+      const nummer = (Number(stapelEl.dataset.boven || 0) % bestanden.length) + 1;
+      tellerEl.textContent = `${nummer} / ${bestanden.length} — klik om te bladeren`;
+    }
+
+    function volgende() {
+      stapelEl.appendChild(stapelEl.firstElementChild);
+      stapelEl.dataset.boven = (Number(stapelEl.dataset.boven || 0) + 1) % bestanden.length;
+      werkStapelBij();
+    }
+
+    // Klikken op de stapel bladert, en mag geen pagina omslaan
+    [stapelEl, tellerEl].forEach((el) => {
+      ['pointerdown', 'mousedown', 'touchstart'].forEach((t) =>
+        el.addEventListener(t, (e) => e.stopPropagation())
+      );
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Op een video wint de bediening; bladeren doe je dan met de teller
+        if (el === stapelEl && e.target.closest('video')) return;
+        volgende();
+      });
+    });
+
+    stapelEl.dataset.boven = 0;
+    werkStapelBij();
+  }
+
   function maakDatePagina(entry, volgnummer) {
     const el = document.createElement('div');
     el.className = 'pagina';
@@ -160,7 +230,8 @@
       <div class="pagina-binnen">
         <h2 class="pagina-titel"></h2>
         <div class="pagina-datum"></div>
-        <div class="polaroid ${volgnummer % 2 ? 'draai-b' : 'draai-a'}"></div>
+        <div class="polaroid-stapel"></div>
+        <button type="button" class="stapel-teller verborgen"></button>
         <p class="pagina-tekst"></p>
         <span class="pagina-nummer">${volgnummer}</span>
         <div class="sticker-laag"></div>
@@ -172,25 +243,7 @@
     const datumEl = el.querySelector('.pagina-datum');
     datumEl.classList.toggle('geen-datum', !entry.datum);
     datumEl.textContent = formatteerDatum(entry.datum) + (entry.plek_naam ? ` — ${entry.plek_naam}` : '');
-    const polaroid = el.querySelector('.polaroid');
-    if (isVideo(entry.foto)) {
-      const video = document.createElement('video');
-      video.src = `${UPLOADS}${entry.foto}`;
-      video.controls = true;
-      video.playsInline = true;
-      video.preload = 'metadata';
-      // Bedienen van de video mag geen pagina-sleep starten
-      ['pointerdown', 'mousedown', 'touchstart'].forEach((t) =>
-        video.addEventListener(t, (e) => e.stopPropagation())
-      );
-      polaroid.appendChild(video);
-    } else {
-      const img = document.createElement('img');
-      img.loading = 'lazy';
-      img.src = `${UPLOADS}${entry.foto}`;
-      img.alt = entry.titel;
-      polaroid.appendChild(img);
-    }
+    vulStapel(el.querySelector('.polaroid-stapel'), el.querySelector('.stapel-teller'), entry, volgnummer);
     el.querySelector('.pagina-tekst').textContent = entry.tekst || '';
     el.dataset.entryId = entry.id;
 
